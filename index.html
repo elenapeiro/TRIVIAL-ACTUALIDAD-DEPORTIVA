@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivial Deportivo — Actualidad España</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        /* Navegación por pestañas */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 600;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Estilos del Juego */
+        .header-stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 22px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: #334155;
+            color: white;
+            border: 2px solid transparent;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #475569;
+        }
+
+        .option-btn.correct {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+            color: #6ee7b7;
+        }
+
+        .option-btn.wrong {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--danger);
+            color: #fca5a5;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Estilos del Editor / Configuración */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        .option-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .option-input-row input[type="radio"] {
+            transform: scale(1.3);
+            accent-color: var(--success);
+            cursor: pointer;
+        }
+
+        .saved-list {
+            margin-top: 25px;
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+        }
+
+        .saved-item {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .btn-reset-default {
+            background: transparent;
+            border: 1px solid #475569;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Pestañas -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="cambiarPestana('jugar')">🎮 Jugar</button>
+        <button class="tab-btn" onclick="cambiarPestana('configurar')">⚙️ Configurar Preguntas</button>
+    </div>
+
+    <!-- SECCIÓN DE JUEGO -->
+    <div id="sec-jugar" class="section active">
+        <div id="quiz-area">
+            <div class="header-stats">
+                <span id="progreso">Pregunta 1 de 10</span>
+                <span id="puntuacion">Aciertos: 0</span>
+            </div>
+            <div class="question-text" id="pregunta-texto">Cargando pregunta...</div>
+            <div class="options-grid" id="opciones-contenedor"></div>
+            <button class="btn-action" id="btn-siguiente" style="display:none;" onclick="siguientePregunta()">Siguiente Pregunta ➡️</button>
+        </div>
+
+        <div id="resultado-area" style="display:none; text-align:center;">
+            <h2>🎉 ¡Partida Terminada!</h2>
+            <p id="mensaje-final" style="font-size: 20px; margin: 20px 0;"></p>
+            <button class="btn-action" onclick="iniciarJuego()">Volver a Jugar 🔄</button>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE CONFIGURACIÓN -->
+    <div id="sec-configurar" class="section">
+        <h3>Añadir Nueva Pregunta</h3>
+        <div class="form-group">
+            <label>Escribe la pregunta:</label>
+            <input type="text" id="nueva-pregunta" placeholder="Ej: ¿Quién ganó el Mundial de 2010?">
+        </div>
+
+        <label>Escribe las opciones y marca el círculo de la <strong>respuesta correcta</strong>:</label>
+        <div class="option-input-row">
+            <input type="radio" name="correcta" value="0" checked title="Marcar como correcta">
+            <input type="text" id="opt-0" placeholder="Opción 1">
+        </div>
+        <div class="option-input-row">
+            <input type="radio" name="correcta" value="1" title="Marcar como correcta">
+            <input type="text" id="opt-1" placeholder="Opción 2">
+        </div>
+        <div class="option-input-row">
+            <input type="radio" name="correcta" value="2" title="Marcar como correcta">
+            <input type="text" id="opt-2" placeholder="Opción 3">
+        </div>
+        <div class="option-input-row">
+            <input type="radio" name="correcta" value="3" title="Marcar como correcta">
+            <input type="text" id="opt-3" placeholder="Opción 4">
+        </div>
+
+        <button class="btn-action" onclick="agregarPregunta()">➕ Guardar Pregunta</button>
+
+        <div class="saved-list">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 style="margin:0;">Preguntas actuales (<span id="total-preguntas">0</span>)</h4>
+                <button class="btn-reset-default" onclick="restaurarPorDefecto()">Restaurar las 10 originales</button>
+            </div>
+            <div id="lista-preguntas"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // LISTADO DE 10 PREGUNTAS DE ACTUALIDAD
+    // ==========================================
+    const preguntasPorDefecto = [
+        {
+            pregunta: "¿Quién firmó el gol de la remontada del Real Madrid (2-1) ante el Celta de Vigo en el minuto 85?",
+            opciones: ["Kylian Mbappé", "Jude Bellingham", "Carlos Espí", "Vinícius Júnior"],
+            correcta: 2
+        },
+        {
+            pregunta: "¿Cuál fue el resultado de la remontada del FC Barcelona ante el Villarreal en el Spotify Camp Nou?",
+            opciones: ["2 - 1", "3 - 2", "4 - 2", "2 - 2"],
+            correcta: 1
+        },
+        {
+            pregunta: "¿Qué jugador del FC Barcelona fue expulsado tras marcar el 2-2 en la remontada ante el Villarreal?",
+            opciones: ["Lamine Yamal", "Gerard Martín", "Fermín López", "Pedri"],
+            correcta: 2
+        },
+        {
+            pregunta: "¿A quién derrotó Carlos Alcaraz en la final de las ATP Finals en Turín?",
+            opciones: ["Jannik Sinner", "Alexander Zverev", "Novak Djokovic", "Daniil Medvedev"],
+            correcta: 1
+        },
+        {
+            pregunta: "¿Qué posición ocupó Marc Márquez en el GP de Portugal en Portimão, donde ganó Jorge Martín?",
+            opciones: ["Tercero", "Quinto", "Octavo", "Décimo"],
+            correcta: 3
+        },
+        {
+            pregunta: "¿Qué delantero del Real Madrid falló un penalti en la primera mitad ante el Celta de Vigo?",
+            opciones: ["Kylian Mbappé", "Jude Bellingham", "Rodrygo", "Endrick"],
+            correcta: 0
+        },
+        {
+            pregunta: "¿Quién marcó el gol inicial del Celta de Vigo en el Santiago Bernabéu en el minuto 6?",
+            opciones: ["Iago Aspas", "Borja Iglesias", "Pablo Durán", "Williot Swedberg"],
+            correcta: 2
+        },
+        {
+            pregunta: "¿Qué jugador del FC Barcelona falló un penalti en el minuto 22 frente al Villarreal?",
+            opciones: ["Robert Lewandowski", "Lamine Yamal", "Raphinha", "Dani Olmo"],
+            correcta: 1
+        },
+        {
+            pregunta: "¿Por qué resultado goleó el Barça femenino al Athletic Club en la jornada 12 de la Liga F?",
+            opciones: ["4 - 0", "5 - 1", "6 - 0", "3 - 0"],
+            correcta: 2
+        },
+        {
+            pregunta: "¿Qué piloto español ganó el Gran Premio de Portugal de MotoGP por delante de Marco Bezzecchi?",
+            opciones: ["Marc Márquez", "Pedro Acosta", "Álex Márquez", "Jorge Martín"],
+            correcta: 3
+        }
+    ];
+
+    const STORAGE_KEY = 'mis_preguntas_quiz_v2';
+
+    // Cargar preguntas guardadas en el navegador o usar las 10 por defecto
+    let preguntas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [...preguntasPorDefecto];
+
+    let indiceActual = 0;
+    let aciertos = 0;
+    let respondida = false;
+
+    function guardarEnStorage() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(preguntas));
+    }
+
+    // Cambiar entre pestaña Jugar y Configurar
+    function cambiarPestana(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+        if (tab === 'jugar') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('sec-jugar').classList.add('active');
+            iniciarJuego();
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('sec-configurar').classList.add('active');
+            renderizarListaConfig();
+        }
+    }
+
+    // Lógica del juego
+    function iniciarJuego() {
+        if (preguntas.length === 0) {
+            document.getElementById('quiz-area').style.display = 'block';
+            document.getElementById('resultado-area').style.display = 'none';
+            document.getElementById('pregunta-texto').innerText = "No hay preguntas. Ve a 'Configurar Preguntas' para añadir algunas.";
+            document.getElementById('opciones-contenedor').innerHTML = "";
+            document.getElementById('btn-siguiente').style.display = 'none';
+            document.getElementById('progreso').innerText = "";
+            return;
+        }
+
+        indiceActual = 0;
+        aciertos = 0;
+        document.getElementById('quiz-area').style.display = 'block';
+        document.getElementById('resultado-area').style.display = 'none';
+        mostrarPregunta();
+    }
+
+    function mostrarPregunta() {
+        respondida = false;
+        const actual = preguntas[indiceActual];
+
+        document.getElementById('progreso').innerText = `Pregunta ${indiceActual + 1} de ${preguntas.length}`;
+        document.getElementById('puntuacion').innerText = `Aciertos: ${aciertos}`;
+        document.getElementById('pregunta-texto').innerText = actual.pregunta;
+        document.getElementById('btn-siguiente').style.display = 'none';
+
+        const contenedor = document.getElementById('opciones-contenedor');
+        contenedor.innerHTML = '';
+
+        actual.opciones.forEach((opcion, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opcion;
+            btn.onclick = () => seleccionarRespuesta(index, btn);
+            contenedor.appendChild(btn);
+        });
+    }
+
+    function seleccionarRespuesta(indiceSeleccionado, botonPulsado) {
+        if (respondida) return;
+        respondida = true;
+
+        const actual = preguntas[indiceActual];
+        const botones = document.querySelectorAll('.option-btn');
+
+        botones.forEach(b => b.disabled = true);
+
+        if (indiceSeleccionado === actual.correcta) {
+            botonPulsado.classList.add('correct');
+            aciertos++;
+            document.getElementById('puntuacion').innerText = `Aciertos: ${aciertos}`;
+        } else {
+            botonPulsado.classList.add('wrong');
+            botones[actual.correcta].classList.add('correct');
+        }
+
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        btnSiguiente.innerText = (indiceActual < preguntas.length - 1) ? "Siguiente Pregunta ➡️" : "Ver Resultados 🏆";
+        btnSiguiente.style.display = 'block';
+    }
+
+    function siguientePregunta() {
+        indiceActual++;
+        if (indiceActual < preguntas.length) {
+            mostrarPregunta();
+        } else {
+            mostrarResultados();
+        }
+    }
+
+    function mostrarResultados() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('resultado-area').style.display = 'block';
+        document.getElementById('mensaje-final').innerText = `Has acertado ${aciertos} de ${preguntas.length} preguntas.`;
+    }
+
+    // Lógica del configurador
+    function agregarPregunta() {
+        const textoPregunta = document.getElementById('nueva-pregunta').value.trim();
+        const opciones = [
+            document.getElementById('opt-0').value.trim(),
+            document.getElementById('opt-1').value.trim(),
+            document.getElementById('opt-2').value.trim(),
+            document.getElementById('opt-3').value.trim()
+        ];
+
+        const radioSeleccionado = document.querySelector('input[name="correcta"]:checked');
+        const indiceCorrecta = parseInt(radioSeleccionado.value);
+
+        if (!textoPregunta || opciones.some(opt => opt === "")) {
+            alert("Por favor, rellena la pregunta y las 4 opciones.");
+            return;
+        }
+
+        preguntas.push({
+            pregunta: textoPregunta,
+            opciones: opciones,
+            correcta: indiceCorrecta
+        });
+
+        guardarEnStorage();
+
+        document.getElementById('nueva-pregunta').value = '';
+        for (let i = 0; i < 4; i++) {
+            document.getElementById(`opt-${i}`).value = '';
+        }
+
+        renderizarListaConfig();
+    }
+
+    function eliminarPregunta(index) {
+        preguntas.splice(index, 1);
+        guardarEnStorage();
+        renderizarListaConfig();
+    }
+
+    function restaurarPorDefecto() {
+        preguntas = [...preguntasPorDefecto];
+        guardarEnStorage();
+        renderizarListaConfig();
+    }
+
+    function renderizarListaConfig() {
+        const lista = document.getElementById('lista-preguntas');
+        document.getElementById('total-preguntas').innerText = preguntas.length;
+        lista.innerHTML = '';
+
+        preguntas.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'saved-item';
+            div.innerHTML = `
+                <div>
+                    <strong>${index + 1}. ${item.pregunta}</strong><br>
+                    <small style="color: #10b981;">✔ Correcta: ${item.opciones[item.correcta]}</small>
+                </div>
+                <button class="btn-delete" onclick="eliminarPregunta(${index})">Eliminar</button>
+            `;
+            lista.appendChild(div);
+        });
+    }
+
+    // Iniciar al cargar
+    iniciarJuego();
+</script>
+
+</body>
+</html>
